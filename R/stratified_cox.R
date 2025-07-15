@@ -7,12 +7,14 @@
 #' @param Event.char name of the event indicator in `data` as a character string. Event indicator should be a 
 #' binary variable with 1 indicating that the event has occurred and 0 indicating (right) censoring.
 #'
-#' @param prov.char name of stratum indicator in `data` as a character string.
-#' If "prov.char" is not specified, all observations are are considered to be from the same stratum.
-#'
 #' @param Z.char names of covariates in `data` as vector of character strings.
 #'
 #' @param Time.char name of the follow up time in `data` as a character string.
+#' 
+#' @param prov.char name of stratum indicator in `data` as a character string.
+#' If "prov.char" is not specified, all observations are are considered to be from the same stratum.
+#' 
+#' @param weight a vector of weights for each observation in `data`. If not specified, all observations are assumed to have equal weight.
 #'
 #' @param group a vector describing the grouping of the coefficients. If there are coefficients to be included in the model without being penalized, assign them to group 0 (or "0").
 #'
@@ -98,31 +100,56 @@
 #' \cr
 
 
-Strat.cox <- function(data, Event.char, Z.char, Time.char, prov.char, group = 1:length(Z.char), group.multiplier,
+Strat.cox <- function(data, Event.char, Z.char, Time.char, prov.char, weight, group = 1:length(Z.char), group.multiplier,
                       standardize = T, lambda, nlambda = 100, lambda.min.ratio = 1e-3, lambda.early.stop = FALSE,
                       nvar.max = p, group.max = length(unique(group)), stop.loss.ratio = 1e-3, tol = 1e-4, 
                       max.each.iter = 1e4, max.total.iter = (max.each.iter * nlambda), actSet = TRUE, 
                       actIter = max.each.iter, actGroupNum = sum(unique(group) != 0), actSetRemove = F,
                       returnX = FALSE, trace.lambda = FALSE,...){
   
-  if (missing(prov.char)){ #single intercept
+  if (missing(prov.char)) {  # single intercept
     warning("Provider information not provided. All data is assumed to originate from a single provider!", call. = FALSE)
     ID <- matrix(1, nrow = nrow(data))
     colnames(ID) <- "intercept"
-    data <- data[order(data[, Time.char]), ]
+    
+    ord <- order(data[, Time.char])  # get ordering index
+    data <- data[ord, ]
+    
+    # reorder weight if provided
+    if (!missing(weight)) {
+      if (length(weight) != nrow(data)) {
+        stop("Length of weight must be equal to the number of rows in data", call. = FALSE)
+      }
+      weight <- weight[ord]
+    } else {
+      weight <- rep(1, nrow(data))
+    }
+    
   } else {
     # re-order original data based on observed time (stratified by provider)
-    data <- data[order(data[, prov.char], data[, Time.char]), ]
-    #recode prov.ID as {1, 2, 3, .....}
+    ord <- order(data[, prov.char], data[, Time.char])  # get ordering index
+    data <- data[ord, ]
+    
+    # reorder weight if provided
+    if (!missing(weight)) {
+      if (length(weight) != nrow(data)) {
+        stop("Length of weight must be equal to the number of rows in data", call. = FALSE)
+      }
+      weight <- weight[ord]
+    } else {
+      weight <- rep(1, nrow(data))
+    }
+    
+    # recode prov.ID as {1, 2, 3, .....}
     unique.prov <- unique(data[, prov.char])
     prov.ref <- cbind(1:length(unique.prov), unique.prov)
     colnames(prov.ref) <- c("New.ID", prov.char)
-    ID <- as.matrix(data[, prov.char])  #stratum indicator
+    ID <- as.matrix(data[, prov.char])  # stratum indicator
     colnames(ID) <- prov.char
-    ID <- merge(ID, prov.ref, by = prov.char)[, 2, drop = F] # now, ID has been recoded as 1, 2, 3, ....
+    ID <- merge(ID, prov.ref, by = prov.char)[, 2, drop = FALSE]  # recoded as 1, 2, 3, ...
     colnames(ID) <- prov.char
   }
-
+  
   n.each_prov <- table(ID)
 
   initial.group <- group
@@ -149,7 +176,7 @@ Strat.cox <- function(data, Event.char, Z.char, Time.char, prov.char, group = 1:
     } else if (nlambda != round(nlambda)){
       stop("nlambda must be a positive integer", call. = FALSE)
     }
-    lambda.fit <- set.lambda.cox(delta.obs, Z, time, ID, beta, group, group.multiplier, n.each_prov,
+    lambda.fit <- set.lambda.cox(delta.obs, Z, time, ID, beta, weight, group, group.multiplier, n.each_prov,
                                  nlambda = nlambda, lambda.min.ratio = lambda.min.ratio)
     lambda.seq <- lambda.fit$lambda.seq
     beta <- lambda.fit$beta
@@ -171,7 +198,7 @@ Strat.cox <- function(data, Event.char, Z.char, Time.char, prov.char, group = 1:
     actIter <- max.each.iter
   }
 
-  fit <- StratCox_lasso(delta.obs, Z, n.each_prov, beta, K0, K1, lambda.seq, lambda.early.stop, stop.loss.ratio, 
+  fit <- StratCox_lasso(delta.obs, Z, weight, n.each_prov, beta, K0, K1, lambda.seq, lambda.early.stop, stop.loss.ratio, 
                         group.multiplier, max.total.iter, max.each.iter, tol, initial.active.group, nvar.max, 
                         group.max, trace.lambda, actSet, actIter, actGroupNum, actSetRemove)
   

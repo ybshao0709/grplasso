@@ -10,6 +10,7 @@ Strat.cox(
   Z.char,
   Time.char,
   prov.char,
+  weight,
   group = 1:length(Z.char),
   group.multiplier,
   standardize = T,
@@ -44,6 +45,8 @@ binary variable with 1 indicating that the event has occurred and 0 indicating (
 
 \item{prov.char}{name of stratum indicator in \code{data} as a character string.
 If "prov.char" is not specified, all observations are are considered to be from the same stratum.}
+
+\item{weight}{a vector of weights for each observation in \code{data}. If not specified, all observations are assumed to have equal weight.}
 
 \item{group}{a vector describing the grouping of the coefficients. If there are coefficients to be included in the model without being penalized, assign them to group 0 (or "0").}
 

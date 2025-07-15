@@ -33,8 +33,8 @@ DiscSurv_lasso <- function(delta_obs, max_timepoint, Z, time, gamma, beta, K0, K
     .Call(`_grplasso_DiscSurv_lasso`, delta_obs, max_timepoint, Z, time, gamma, beta, K0, K1, sum_failure, lambda_seq, penalized_multiplier, max_total_iter, max_each_iter, tol, backtrack, MM, bound, initial_active_var, nvar_max, trace_lambda, threads, actSet, actIter, activeVarNum, actSetRemove)
 }
 
-StratCox_lasso <- function(delta_obs, Z, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove) {
-    .Call(`_grplasso_StratCox_lasso`, delta_obs, Z, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove)
+StratCox_lasso <- function(delta_obs, Z, weight, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove) {
+    .Call(`_grplasso_StratCox_lasso`, delta_obs, Z, weight, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove)
 }
 
 SerBIN <- function(Y, Z, n_prov, gamma, beta) {

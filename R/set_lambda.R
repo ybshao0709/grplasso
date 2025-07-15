@@ -92,21 +92,22 @@ set.lambda.DiscSurv <- function(delta.obs, Z, time, alpha, beta, group, group.mu
 }
 
 #####----- stratified cox -----#####
-set.lambda.cox <- function(delta.obs, Z, time, ID, beta, group, group.multiplier, n.each_prov,
+set.lambda.cox <- function(delta.obs, Z, time, ID, beta, weight, group, group.multiplier, n.each_prov,
                            nlambda = 100, lambda.min.ratio = 1e-04){
   K <- table(group)
   K1 <- if (min(group) == 0) cumsum(K) else c(0, cumsum(K))
   storage.mode(K1) <- "integer"
   n <- sum(n.each_prov)
   if (K1[1] != 0) {  ## some covariates are not penalized (use cox stratified)
-    nullFit <- survival::coxph(survival::Surv(time, delta.obs) ~ Z[, group == 0, drop = F] + strata(ID))
+    nullFit <- survival::coxph(survival::Surv(time, delta.obs) ~ Z[, group == 0, drop = F] + strata(ID),
+                               weights = weight)
     eta <- nullFit$linear.predictors
     beta.initial <- c(nullFit$beta, rep(0, length(beta) - length(nullFit$beta)))
     rsk <- c()
     for (i in unique(ID)){
       rsk <- c(rsk, rev(cumsum(rev(exp(eta[ID == i])))))
     }
-    r <- delta.obs - exp(eta) * cumsum(delta.obs / rsk)
+    r <- weight * (delta.obs - exp(eta) * cumsum(delta.obs / rsk))
   } else { ## all covariates are penalized
     w <- c()
     h <- c()
@@ -116,7 +117,7 @@ set.lambda.cox <- function(delta.obs, Z, time, ID, beta, group, group.multiplier
       h <- c(h, cumsum(delta.obs[ID == i] * temp.w))
     }
     
-    r <- delta.obs - h
+    r <- weight * (delta.obs - h)
     beta.initial <- beta
   }
   lambda.max <- Z_max_grLasso(Z, r, K1, as.double(group.multiplier))/n

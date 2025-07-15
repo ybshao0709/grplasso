@@ -55,6 +55,7 @@
 <span>  <span class="va">Z.char</span>,</span>
 <span>  <span class="va">Time.char</span>,</span>
 <span>  <span class="va">prov.char</span>,</span>
+<span>  <span class="va">weight</span>,</span>
 <span>  group <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">Z.char</span><span class="op">)</span>,</span>
 <span>  <span class="va">group.multiplier</span>,</span>
 <span>  standardize <span class="op">=</span> <span class="cn">T</span>,</span>
@@ -102,6 +103,10 @@ binary variable with 1 indicating that the event has occurred and 0 indicating (
 <dt id="arg-prov-char">prov.char<a class="anchor" aria-label="anchor" href="#arg-prov-char"></a></dt>
 <dd><p>name of stratum indicator in <code>data</code> as a character string.
 If "prov.char" is not specified, all observations are are considered to be from the same stratum.</p></dd>
+
+
+<dt id="arg-weight">weight<a class="anchor" aria-label="anchor" href="#arg-weight"></a></dt>
+<dd><p>a vector of weights for each observation in <code>data</code>. If not specified, all observations are assumed to have equal weight.</p></dd>
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>

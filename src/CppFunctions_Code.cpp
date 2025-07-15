@@ -174,12 +174,12 @@ arma::mat predict_linear_predictor(int n_lambda, int n_obs, int expand_n_obs, ar
   return(predict_linear_predictor);
 }
 
-
-// Function1: "ppLasso"
+/**************************************************** Function 1: "ppLasso" ****************************************************/
 // "pplasso" is used for solving non-group lasso problems. The algorithms will be very different between that use MM and that do not.
 
 // update penalized beta (simple lasso with MM algorithm)
-void gd_glm_lasso_MM(arma::vec &beta, arma::mat &Z, arma::vec &r, arma::vec &eta, arma::vec &old_beta, arma::vec &inner_product_Z, int j, int n_obs, double lambda, double &df, double &MaxChange_beta){
+void gd_glm_lasso_MM(arma::vec &beta, arma::mat &Z, arma::vec &r, arma::vec &eta, arma::vec &old_beta, 
+                     arma::vec &inner_product_Z, int j, int n_obs, double lambda, double &df, double &MaxChange_beta){
   double beta_initial = crossprod(Z, r, j)/inner_product_Z(j) + old_beta(j);
   double threshold = n_obs * lambda/(0.25 * inner_product_Z(j));
   double len = Soft_thres(beta_initial, threshold);
@@ -286,7 +286,7 @@ tuple<arma::vec, arma::vec, arma::vec, double, double, int> pp_lasso_fit(arma::v
         p(i) = p_binomial(eta(i));
       }
 
-      if (single_intercept == true) {  // use coordinate descent to update intercept
+      if (single_intercept == true) {  // no "provider" information provided so we only have a single intercept term; use coordinate descent to update intercept
         if (MM == true){
           r = (Y - p)/v; //initial pseudo residual vector
           shift = sum(r)/n_obs;  //add a "1" column of Z as the intercept
@@ -294,7 +294,7 @@ tuple<arma::vec, arma::vec, arma::vec, double, double, int> pp_lasso_fit(arma::v
           eta += shift;
           r -= shift;
         } else {
-          w = p % (1 - p); //initial "w" for current iteration; "w" here doesn't change during within current iteration!
+          w = p % (1 - p); //initial "weights" for current iteration; "w" will not change during within current iteration!
           if (any(w == 0)) {
             w.replace(0, omega_min);
           }
@@ -304,7 +304,7 @@ tuple<arma::vec, arma::vec, arma::vec, double, double, int> pp_lasso_fit(arma::v
           eta += shift;
           r -= shift;
         }
-      } else {  //use Newton method to update gamma
+      } else {  //use Newton method to update gamma; gamma is not penalized
         double info_gamma;
         int nProcessors = threads;
         arma::vec score_gamma(n_gamma), d_gamma(n_gamma), Yp(n_obs), pq(n_obs), gamma_obs(n_obs);
@@ -461,15 +461,15 @@ tuple<arma::vec, arma::vec, arma::vec, double, double, int> pp_lasso_fit(arma::v
       }
 
       int if_add_new = 0;
-      arma::uvec descend_beta_change_index = sort_index(Current_Change_beta, "descend"); // find index of largest "Current_Change_beta".
-      arma::vec descend_beta_change = sort(Current_Change_beta, "descend"); // find largest "Current_Change_beta"
+      arma::uvec descend_beta_change_index = sort_index(Current_Change_beta, "descend"); // find index of largest "Current_Change_beta"s.
+      arma::vec descend_beta_change = sort(Current_Change_beta, "descend"); // find largest "Current_Change_beta"s
 
-      for (int i = 0; i < activeVarNum; i++){ // only select the largest "actNum" beta's into the new active set
+      for (int i = 0; i < activeVarNum; i++){ // only select the largest "actNum" betas into the new active set
         if (descend_beta_change(i)!= 0){
           if_add_new++;
           // the first "actNum" numbers of "descend_beta_change_index" can still contains zero,
           // we should not include them into our new active set.
-          // e.g. The current "active_var" is (1, 0, 0, 1, 0), and "descend_beta_change" is (beta2 = 0.4, beta3 = 0.3, beta5 = 0, beta1 = 0, beta4 = 0), and we will choose maximum 3 beta's,
+          // e.g. The current "active_var" is (1, 0, 0, 1, 0), and "descend_beta_change" is (beta2 = 0.4, beta3 = 0.3, beta5 = 0, beta1 = 0, beta4 = 0), and we want to choose maximum 3 beta's,
           // we should only add beta2 & beta3 in the current active set, and new "active_var" should be (1, 1, 1, 1, 0)
           active_var(descend_beta_change_index(i)) = 1;
         } else {
@@ -591,7 +591,18 @@ List pp_lasso(arma::vec &Y, arma::mat &Z, arma::vec &n_prov, arma::vec &gamma, a
 
 
 
-// Function2: "grplasso"
+
+
+
+
+
+
+
+
+
+
+
+/**************************************************** Function 2: "grplasso" ****************************************************/
 // "grplasso" is used for solving group lasso problems. The algorithm is based on MM algorithm.
 
 void gd_glm_grplasso(arma::vec &beta, arma::mat &Z, arma::vec &r, arma::vec &eta, arma::vec &old_beta, int g, arma::vec &K1, int n_obs, double lambda, double &df, double &MaxChange_beta){
@@ -909,7 +920,10 @@ List grp_lasso(arma::vec &Y, arma::mat &Z, arma::vec &n_prov, arma::vec &gamma, 
 }
 
 
-// Function3: discrete survival model with logit-link
+
+
+
+/**************************************************** Function 3: Discrete survival model with logit-link ****************************************************/
 void gd_Surv(arma::vec &beta, arma::mat &Z, arma::vec &r, arma::vec &eta, arma::vec &time, arma::vec &old_beta, arma::vec &w, int p, int n_obs, double lambda, double &df, double &MaxChange_beta){
   double beta_initial = w_crossprod(Z, r, w, p)/weighted_inner_product(Z, w, p) + old_beta(p);
   double threshold = n_obs * lambda/weighted_inner_product(Z, w, p);
@@ -1530,7 +1544,10 @@ List DiscSurv_lasso(arma::vec &delta_obs, int max_timepoint, arma::mat &Z, arma:
 
 
 
-// stratified cox model
+
+
+
+/**************************************************** Function 4: Stratified Cox Model ****************************************************/
 
 void gd_stratCox(arma::vec &beta, arma::mat &Z, arma::vec &r, arma::vec &eta, arma::vec &old_beta, 
                  int g, arma::vec &K1, int n_obs, double lambda, double &df, double &MaxChange_beta){
@@ -1575,15 +1592,15 @@ double gd_stratCox_BetaChange(arma::mat &Z, arma::vec &r, int g, arma::vec &K1, 
 }
 
 
-tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &delta_obs, arma::mat &Z, arma::vec &n_each_prov, arma::vec beta, arma::vec eta, int K0, arma::vec &K1,
+tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &delta_obs, arma::mat &Z, arma::vec &weight, arma::vec &n_each_prov, arma::vec beta, arma::vec eta, int K0, arma::vec &K1,
                                                                     double lambda, int &tol_iter, int max_total_iter, int max_each_iter, arma::vec &group_multiplier, int count_stratum,
                                                                     double tol, arma::vec &ind_start, arma::vec &active_group, int n_obs, int n_group,
                                                                     bool actSet, int actIter, int activeGroupNum, bool actSetRemove){
 
   arma::vec old_beta = beta, r(n_obs), r_shift;
-  arma::vec haz(n_obs), rsk(n_obs), h(n_obs); // (1) haz: exp(eta); (2) rsk: sum(eta); (3) h: delta/sum(eta);
+  arma::vec haz(n_obs), rsk(n_obs), h(n_obs); // (1) haz: exp(eta); (2) rsk: sum(eta); (3) h: sum(delta/sum(eta));
   double loss, df, MaxChange_beta, shift, lambda_g;
-  double s, v = 1; // (1) s: l'(eta); (2) v: -l''(eta) qpproximate to 1
+  double s, v = 1.0; // (1) s: l'(eta); (2) v: -l''(eta) approximate to 1
   int iter = 0;
 
   while (tol_iter < max_total_iter) {
@@ -1600,7 +1617,7 @@ tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &d
 
 
       // calculate haz and rsk
-      haz = exp(eta);
+      haz = arma::exp(eta);
       for (int j = 0; j < count_stratum; j++){
         rsk(ind_start(j) + n_each_prov(j) - 1) = haz(ind_start(j) + n_each_prov(j) - 1); //the last record (with max time) in j^th stratum
         for (int i = ind_start(j) + n_each_prov(j) - 2; i >= ind_start(j); i--){
@@ -1620,17 +1637,17 @@ tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &d
 
       for (int i = 0; i < n_obs; i++){ //compute the initial pseudo residual r = l'(eta)
         a = haz(i) * h(i);
-        s = delta_obs(i) - a; //l'(eta)
         if (a == 0){
           r(i) = 0;
         } else {
-          r(i) = s/v;
+          s =  weight(i) * (delta_obs(i) - a); //l'(eta)
+          r(i) = s/v; //r: pseudo residual
         }
       }
 
       loss = 0; //loss: current likelihood function (before update beta) without penalty
       for (int i = 0; i < n_obs; i++){
-         loss += delta_obs(i) *(haz(i) + log(rsk(i)));
+         loss += delta_obs(i) *(weight(i) * eta(i) - log(weight(i) * rsk(i)));
       }
       
       //update unpenalized groups
@@ -1707,13 +1724,13 @@ tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &d
 }
 
 // [[Rcpp::export]]
-List StratCox_lasso(arma::vec &delta_obs, arma::mat &Z, arma::vec &n_each_prov, arma::vec &beta, int K0, arma::vec &K1, 
+List StratCox_lasso(arma::vec &delta_obs, arma::mat &Z, arma::vec &weight, arma::vec &n_each_prov, arma::vec &beta, int K0, arma::vec &K1, 
                     arma::vec &lambda_seq, bool lambda_early_stop, double stop_loss_ratio, arma::vec &group_multiplier, 
                     int max_total_iter, int max_each_iter, double tol, int initial_active_group, double nvar_max, 
                     double group_max, bool trace_lambda, bool actSet, int actIter, int activeGroupNum, bool actSetRemove) {
   int n_obs = Z.n_rows, n_beta = Z.n_cols, n_lambda = lambda_seq.n_elem, n_group = K1.n_elem - 1;
   int tol_iter = 0;
-  int count_stratum = n_each_prov.n_elem;
+  int count_stratum = n_each_prov.n_elem; // number of strata (i.e., number of providers)
 
   arma::mat beta_matrix(n_beta, n_lambda, fill::zeros); 
   arma::mat eta_matrix(n_obs, n_lambda, fill::zeros); // linear predictor
@@ -1746,7 +1763,7 @@ List StratCox_lasso(arma::vec &delta_obs, arma::mat &Z, arma::vec &n_each_prov, 
     }
     double lambda = lambda_seq(l);
     
-    auto fit = StratCox_lasso_fit(delta_obs, Z, n_each_prov, beta, eta, K0, K1, lambda, tol_iter, max_total_iter, max_each_iter, group_multiplier, count_stratum, tol, ind_start, active_group, n_obs, n_group, actSet, actIter, activeGroupNum, actSetRemove);
+    auto fit = StratCox_lasso_fit(delta_obs, Z, weight, n_each_prov, beta, eta, K0, K1, lambda, tol_iter, max_total_iter, max_each_iter, group_multiplier, count_stratum, tol, ind_start, active_group, n_obs, n_group, actSet, actIter, activeGroupNum, actSetRemove);
     double loss_l, df_l;
     int iter_l;
     tie(beta, eta, loss_l, df_l, iter_l) = fit;
