@@ -114,31 +114,10 @@ Strat.cox <- function(data, Event.char, Z.char, Time.char, prov.char, weight, gr
     
     ord <- order(data[, Time.char])  # get ordering index
     data <- data[ord, ]
-    
-    # reorder weight if provided
-    if (!missing(weight)) {
-      if (length(weight) != nrow(data)) {
-        stop("Length of weight must be equal to the number of rows in data", call. = FALSE)
-      }
-      weight <- weight[ord]
-    } else {
-      weight <- rep(1, nrow(data))
-    }
-    
   } else {
     # re-order original data based on observed time (stratified by provider)
     ord <- order(data[, prov.char], data[, Time.char])  # get ordering index
     data <- data[ord, ]
-    
-    # reorder weight if provided
-    if (!missing(weight)) {
-      if (length(weight) != nrow(data)) {
-        stop("Length of weight must be equal to the number of rows in data", call. = FALSE)
-      }
-      weight <- weight[ord]
-    } else {
-      weight <- rep(1, nrow(data))
-    }
     
     # recode prov.ID as {1, 2, 3, .....}
     unique.prov <- unique(data[, prov.char])
@@ -148,6 +127,15 @@ Strat.cox <- function(data, Event.char, Z.char, Time.char, prov.char, weight, gr
     colnames(ID) <- prov.char
     ID <- merge(ID, prov.ref, by = prov.char)[, 2, drop = FALSE]  # recoded as 1, 2, 3, ...
     colnames(ID) <- prov.char
+  }
+  
+  if (!missing(weight)) {
+    if (length(weight) != nrow(data)) {
+      stop("Length of weight must be equal to the number of rows in data", call. = FALSE)
+    }
+    weight <- weight[ord]
+  } else {
+    weight <- rep(1, nrow(data))
   }
   
   n.each_prov <- table(ID)
